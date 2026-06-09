@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "outlineguard",
+  "version": "${version}",
+  "name": "Outline Guard",
+  "description": "Client-side mining safety for avoiding vertical mining past locally configured marker blocks.",
+  "authors": [
+    "CSClub05"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.csclub05.outlineguard.client.OutlineGuardClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "~1.21.4",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
