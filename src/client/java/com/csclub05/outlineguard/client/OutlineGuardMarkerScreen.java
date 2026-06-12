@@ -9,12 +9,14 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public final class OutlineGuardMarkerScreen extends Screen {
     private TextFieldWidget blockIdField;
     private Text status = Text.literal("Enter a block ID like minecraft:red_concrete. Client-side only.");
+    private List<Identifier> displayedMarkers = new ArrayList<>();
 
     public OutlineGuardMarkerScreen() {
         super(Text.literal("Outline Guard Markers"));
@@ -22,13 +24,14 @@ public final class OutlineGuardMarkerScreen extends Screen {
 
     @Override
     protected void init() {
+        refreshDisplayedMarkers();
+
         int centerX = this.width / 2;
         int y = 54;
 
         this.blockIdField = new TextFieldWidget(this.textRenderer, centerX - 120, y, 240, 20, Text.literal("Block ID"));
         this.blockIdField.setMaxLength(128);
-        List<Identifier> markers = OutlineGuardClient.markerBlocks();
-        this.blockIdField.setText(markers.isEmpty() ? "minecraft:netherrack" : markers.getFirst().toString());
+        this.blockIdField.setText(this.displayedMarkers.isEmpty() ? "minecraft:netherrack" : this.displayedMarkers.getFirst().toString());
         this.addDrawableChild(this.blockIdField);
         this.setInitialFocus(this.blockIdField);
 
@@ -46,7 +49,8 @@ public final class OutlineGuardMarkerScreen extends Screen {
                 .build());
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Reload config"), button -> {
                     OutlineGuard.CONFIG.load();
-                    this.status = Text.literal("Reloaded settings from outlineguard-client.json.");
+                    refreshDisplayedMarkers();
+                    this.status = Text.literal("Reloaded local settings from outlineguard-client.json.");
                 })
                 .dimensions(centerX + 5, y, 115, 20)
                 .build());
@@ -79,11 +83,19 @@ public final class OutlineGuardMarkerScreen extends Screen {
             case REMOVE -> OutlineGuard.CONFIG.removeMarker(id);
         };
 
+        // Keep the GUI's displayed marker list in sync immediately after each button press.
+        // This avoids requiring the player to close/reopen the screen to see Add/Remove changes.
+        refreshDisplayedMarkers();
+
         this.status = switch (action) {
             case SET -> Text.literal("Set local marker to " + id + ".");
             case ADD -> changed ? Text.literal("Added local marker " + id + ".") : Text.literal(id + " is already a local marker.");
             case REMOVE -> changed ? Text.literal("Removed local marker " + id + ".") : Text.literal(id + " was not in your local marker list.");
         };
+    }
+
+    private void refreshDisplayedMarkers() {
+        this.displayedMarkers = OutlineGuardClient.markerBlocks();
     }
 
     @Override
@@ -93,14 +105,41 @@ public final class OutlineGuardMarkerScreen extends Screen {
         context.drawTextWithShadow(this.textRenderer, Text.literal("Block ID"), this.width / 2 - 120, 42, 0xA0A0A0);
         super.render(context, mouseX, mouseY, delta);
 
-        List<Identifier> markers = OutlineGuardClient.markerBlocks();
-        String markerText = markers.isEmpty()
-                ? "Current local markers: none"
-                : "Current local markers: " + markers.stream().map(Identifier::toString).collect(Collectors.joining(", "));
+        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("These settings only affect your own client."), this.width / 2, this.height - 82, 0xA0FFA0);
+        context.drawCenteredTextWithShadow(this.textRenderer, this.status, this.width / 2, this.height - 64, 0xFFFF55);
 
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("These settings only affect your own client."), this.width / 2, this.height - 66, 0xA0FFA0);
-        context.drawCenteredTextWithShadow(this.textRenderer, this.status, this.width / 2, this.height - 48, 0xFFFF55);
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(markerText), this.width / 2, this.height - 30, 0xFFFFFF);
+        drawMarkerList(context);
+    }
+
+    private void drawMarkerList(DrawContext context) {
+        String markerText = this.displayedMarkers.isEmpty()
+                ? "Current local markers: none"
+                : "Current local markers: " + this.displayedMarkers.stream().map(Identifier::toString).collect(Collectors.joining(", "));
+
+        int maxWidth = this.width - 40;
+        List<String> lines = wrap(markerText, maxWidth);
+        int startY = this.height - 44;
+        for (int i = 0; i < lines.size() && i < 3; i++) {
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(lines.get(i)), this.width / 2, startY + (i * 12), 0xFFFFFF);
+        }
+    }
+
+    private List<String> wrap(String text, int maxWidth) {
+        List<String> lines = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (String part : text.split(", ")) {
+            String candidate = current.isEmpty() ? part : current + ", " + part;
+            if (this.textRenderer.getWidth(candidate) > maxWidth && !current.isEmpty()) {
+                lines.add(current.toString());
+                current = new StringBuilder(part);
+            } else {
+                current = new StringBuilder(candidate);
+            }
+        }
+        if (!current.isEmpty()) {
+            lines.add(current.toString());
+        }
+        return lines;
     }
 
     @Override

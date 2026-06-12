@@ -23,9 +23,11 @@ public final class OutlineGuardClientProtection {
 
         BlockState targetState = world.getBlockState(targetPos);
 
-        // Always allow the player to remove or move the outline marker itself.
+        // Protect the marker block itself too. Outline Guard is meant to prevent
+        // accidental mining at the outline, including the marker and every block
+        // above or below it in the same X/Z column.
         if (OutlineGuard.CONFIG.isMarker(targetState.getBlock())) {
-            return false;
+            return true;
         }
 
         BlockPos.Mutable mutable = new BlockPos.Mutable();

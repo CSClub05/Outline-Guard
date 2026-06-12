@@ -4,9 +4,11 @@ import com.csclub05.outlineguard.OutlineGuard;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -26,6 +28,24 @@ public final class OutlineGuardClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         OutlineGuard.CONFIG.load();
+
+        // Hard safety check: cancel the local block attack before Minecraft can start or
+        // continue breaking a protected block. This fixes 1.21.8 cases where simply
+        // releasing the attack key in a tick handler was too late and blocks in the
+        // marker column could still be mined.
+        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+            if (world.isClient() && OutlineGuardClientProtection.shouldBlockMining(pos)) {
+                OutlineGuardClientProtection.showBlockedMessage();
+                MinecraftClient client = MinecraftClient.getInstance();
+                client.options.attackKey.setPressed(false);
+                if (client.interactionManager != null) {
+                    client.interactionManager.cancelBlockBreaking();
+                }
+                miningPausedByOutlineGuard = true;
+                return ActionResult.FAIL;
+            }
+            return ActionResult.PASS;
+        });
 
         openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.outlineguard.open_gui",
