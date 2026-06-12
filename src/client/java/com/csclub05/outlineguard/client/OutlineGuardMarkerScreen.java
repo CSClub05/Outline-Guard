@@ -88,7 +88,7 @@ public final class OutlineGuardMarkerScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context, mouseX, mouseY, delta);
+        context.fill(0, 0, this.width, this.height, 0xC0101010);
         context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 20, 0xFFFFFF);
         context.drawTextWithShadow(this.textRenderer, Text.literal("Block ID"), this.width / 2 - 120, 42, 0xA0A0A0);
         super.render(context, mouseX, mouseY, delta);
