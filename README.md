@@ -1,13 +1,17 @@
 # Outline Guard
 
-Outline Guard is a fully client-side Fabric mod for Minecraft 1.21.4.
+Outline Guard is a fully client-side Fabric mod for Minecraft 1.21.8.
 
-It helps prevent accidental vertical mining past your own outline markers while clearing an area. The mod only affects the player who has it installed. It does not protect blocks from other players, and it should not be installed server-side.
+It helps prevent accidental vertical mining past your own outline markers while clearing an area. The mod only affects the player who has it installed. It does not protect blocks from other players, and it should not be installed on a dedicated server.
 
 ## Features
 
 - Client-side only
+- No server installation required
+- No custom networking
+- No mixins
 - Configurable marker block list
+- Smooth mining pause/resume behavior
 - In-game GUI opened with **D + C**
 
 ## How to use
@@ -70,7 +74,7 @@ Use the regular `.jar`, not the `-sources.jar`.
 
 ## Requirements
 
-- Minecraft 1.21.4
+- Minecraft 1.21.8
 - Fabric Loader 0.16.10 or newer
 - Fabric API
 - Java 21 or newer
